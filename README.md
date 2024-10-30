@@ -1,4 +1,3 @@
-
 ![cofounder-og-black](https://github.com/user-attachments/assets/b4e51f02-59e4-4540-ac14-e1f40e20a658)
 
 # Cofounder | Early alpha release
@@ -158,12 +157,37 @@ The default LLM concurrency is set to `2` so you can see what's happening in you
 
 # Architecture
 
-[more details later]
+The architecture of this repository is designed to generate full-stack web applications, including backend, database, and frontend components. Below is a detailed explanation of the architecture and how to interact with various components.
 
-archi/v1 is as follows :
+## Overview
 
-![architecture](https://github.com/user-attachments/assets/b2d8b70e-7a6d-45c9-a706-0cf955d13451)
+The repository is structured to facilitate the generation of web applications with a focus on modularity and scalability. The main components include:
 
+1. **Backend**: Handles server-side logic and API endpoints.
+2. **Database**: Manages data storage and retrieval.
+3. **Frontend**: Provides the user interface and client-side logic.
+4. **System Functions**: Contains various functions for different tasks.
+5. **Structure Definitions**: YAML files defining the structure of nodes and sequences.
+
+## Backend
+
+The backend is responsible for handling server-side logic and API endpoints. It is set up using Express.js and includes several API endpoints for different functionalities. The main file for the backend is `cofounder/api/server.js`.
+
+## Database
+
+The database component manages data storage and retrieval. It uses PostgreSQL for data storage and includes schema definitions and seed data. The database-related files are located in the `cofounder/api/db` directory.
+
+## Frontend
+
+The frontend provides the user interface and client-side logic. It is built using Vite and React. The frontend-related files are located in the `apps/{YourApp}` directory.
+
+## System Functions
+
+The `cofounder/api/system/functions` directory contains various functions for different tasks. Each function is designed to perform a specific task and can interact with other functions. Detailed documentation for each function is available in the `docs` directory.
+
+## Structure Definitions
+
+The `cofounder/api/system/structure` directory contains YAML files defining the structure of nodes and sequences. These files explain the purpose and usage of each node and sequence, providing a clear understanding of how different components interact with each other.
 
 ---
 
