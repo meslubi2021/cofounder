@@ -57,11 +57,15 @@ async function opLlmGen({ context, data }) {
 		parser = utils.parsers.parse.yaml;
 	}
 
+	// Add context-specific information to the prompt
+	const contextInfo = `Project: ${project}\nOperation: ${operation.key}\n`;
+	messages[0].content = `${contextInfo}${messages[0].content}`;
+
 	const llm_fn = !process.env.LLM_PROVIDER
 		? utils.openai.inference
 		: process.env.LLM_PROVIDER.toLowerCase() === "openai"
-			? utils.openai.inference
-			: utils.anthropic.inference;
+				? utils.openai.inference
+				: utils.anthropic.inference;
 
 	const { text, usage } = await llm_fn({
 		model: model,
