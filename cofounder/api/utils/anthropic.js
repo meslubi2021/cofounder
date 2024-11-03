@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import openrouter from "./openrouter.js"; // Import the new openrouter module
 import dotenv from "dotenv";
 dotenv.config();
 const anthropic = new Anthropic();
@@ -66,6 +67,9 @@ async function inference({
 	messages,
 	stream = process.stdout,
 }) {
+	if (process.env.OPENROUTER_TOKEN) {
+		return openrouter.inference({ model, messages, stream });
+	}
 	// messages are in openai format , need conversion
 	const converted = await _convertFromOpenaiFormat({ messages });
 	// console.dir({ "debug:utils:anthropic": {messages : converted.messages} } , {depth:null})
