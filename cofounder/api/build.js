@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import yaml from "yaml-js";
+import yaml from "yaml";
 import yml from "yaml";
 import { merge, fromPairs } from "lodash-es";
 import retry from "async-retry";
@@ -352,7 +352,7 @@ const system = await build({
 			{},
 			...(await Promise.all(
 				(await getFilesRecursively(unitsDir, ".yaml")).map((file) =>
-					yaml.load(fs.readFileSync(`./${file}`, `utf-8`).toString()),
+					yaml.parse(fs.readFileSync(`./${file}`, `utf-8`).toString()),
 				),
 			)),
 		),
