@@ -82,25 +82,33 @@ async function build({ system }) {
 						return await queues[id].add(async () => {
 							events.log.node.emit(`start`, { id, context, data });
 							const response = await retry(
-								async (bail) => {
+								async (bail, attempt) => {
 									try {
 										const fnresponse = await system.functions[id]({
 											context: { ...context, run: system.run },
 											data: system.nodes[id].in?.length
 												? system.nodes[id].in.reduce(
-														(acc, inp) => ({ ...acc, [inp]: data[inp] || null }),
-														{},
-													) // higher perf than fromPairs ?
+													(acc, inp) => ({ ...acc, [inp]: data[inp] || null }),
+													{},
+												) // higher perf than fromPairs ?
 												: data,
 										});
+
+										if (!fnresponse || (id === 'BACKEND:SERVER::GENERATE' && !fnresponse.backend.server.main.mjs)) {
+											if (attempt >= (parseInt(system.nodes[id].queue?.retry) || 5)) {
+												console.error(`backend:server:generate error - generated is empty after ${attempt} attempts`);
+												return { success: false };
+											}
+											throw new Error("backend:server:generate error - generated is empty");
+										}
 
 										return !fnresponse
 											? { success: false }
 											: system.nodes[id].out?.length
 												? system.nodes[id].out.reduce(
-														(acc, inp) => ({ ...acc, [inp]: fnresponse[inp] || null }),
-														{},
-													)
+													(acc, inp) => ({ ...acc, [inp]: fnresponse[inp] || null }),
+													{},
+												)
 												: fnresponse;
 									} catch (error) {
 										console.dir({ asyncretry_error: { id, error } }, { depth: null });
@@ -128,12 +136,12 @@ async function build({ system }) {
 		),
 	);
 	/*
-    make the DAG graph decomposition parallelizor from the system and relations
-    handle : seq , parallel , recursion too !
-  */
+		make the DAG graph decomposition parallelizor from the system and relations
+		handle : seq , parallel , recursion too !
+	*/
 	/*
-    event registration for system triggers (nodes are all registered for events node:{id} )
-  */
+		event registration for system triggers (nodes are all registered for events node:{id} )
+	*/
 
 	if (LOGS_ENABLED) {
 		events.log.sequence.on(`sequence:start`, ({ id, context, data }) => {

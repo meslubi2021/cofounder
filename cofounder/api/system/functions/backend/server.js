@@ -3,9 +3,9 @@ import yaml from "yaml";
 
 async function backendServerGenerate({ context, data }) {
 	/*
-    base on dev:test oneshot function
-    mix with the bak api generate for the make sure blabla
-  */
+		base on dev:test oneshot function
+		mix with the bak api generate for the make sure blabla
+	*/
 	const { pm, db, backend } = data;
 	const { prd, frd, drd, brd } = pm;
 	const { openapi, asyncapi } = backend.specifications;
@@ -311,7 +311,20 @@ now do the analysis , write the full working script and specify the dependencies
 
 	const { mjs } = extraction;
 	if (!mjs.length || !extraction.yaml) {
-		throw new Error("backend:server:generate error - generated is empty");
+		console.error("backend:server:generate error - generated is empty");
+		return {
+			backend: {
+				...data.backend,
+				server: {
+					main: {
+						mjs: "",
+						dependencies: {},
+						env: {},
+						timestamp: Date.now(),
+					},
+				},
+			},
+		};
 	}
 
 	const parsedYaml = extraction.yaml ? yaml.parse(extraction.yaml) : {};
@@ -319,8 +332,8 @@ now do the analysis , write the full working script and specify the dependencies
 		mjs,
 		dependencies: parsedYaml.dependencies
 			? Object.fromEntries(
-					Object.keys(parsedYaml.dependencies).map((key) => [key, "*"]),
-				)
+				Object.keys(parsedYaml.dependencies).map((key) => [key, "*"]),
+			)
 			: [],
 		env: parsedYaml.env ? parsedYaml.env : {},
 		timestamp: Date.now(),
