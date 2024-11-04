@@ -2,7 +2,7 @@
 ![cofounder-og-black](https://github.com/user-attachments/assets/b4e51f02-59e4-4540-ac14-e1f40e20a658)
 
 # Cofounder | Early alpha release
-
+DSFSD
 * project - [cofounder.openinterface.ai](https://cofounder.openinterface.ai)
 * 👋 [@n_raidenai](https://x.com/n_raidenai)
 
