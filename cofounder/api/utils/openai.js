@@ -1,6 +1,7 @@
 import fs from "fs";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import openrouter from "@/utils/openrouter.js";
 dotenv.config();
 
 let openai;
@@ -17,6 +18,9 @@ async function inference({
 	messages,
 	stream = process.stdout,
 }) {
+	if (process.env.OPENROUTER_TOKEN) {
+		return openrouter.inference({ model, messages, stream });
+	}
 	const streaming = await openai.chat.completions.create({
 		model,
 		messages,

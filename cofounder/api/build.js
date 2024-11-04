@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import yaml from "yaml-js";
+import yaml from "yaml";
 import yml from "yaml";
 import { merge, fromPairs } from "lodash-es";
 import retry from "async-retry";
@@ -82,25 +82,33 @@ async function build({ system }) {
 						return await queues[id].add(async () => {
 							events.log.node.emit(`start`, { id, context, data });
 							const response = await retry(
-								async (bail) => {
+								async (bail, attempt) => {
 									try {
 										const fnresponse = await system.functions[id]({
 											context: { ...context, run: system.run },
 											data: system.nodes[id].in?.length
 												? system.nodes[id].in.reduce(
-														(acc, inp) => ({ ...acc, [inp]: data[inp] || null }),
-														{},
-													) // higher perf than fromPairs ?
+													(acc, inp) => ({ ...acc, [inp]: data[inp] || null }),
+													{},
+												) // higher perf than fromPairs ?
 												: data,
 										});
+
+										if (!fnresponse || (id === 'BACKEND:SERVER::GENERATE' && !fnresponse.backend.server.main.mjs)) {
+											if (attempt >= (parseInt(system.nodes[id].queue?.retry) || 5)) {
+												console.error(`backend:server:generate error - generated is empty after ${attempt} attempts`);
+												return { success: false };
+											}
+											throw new Error("backend:server:generate error - generated is empty");
+										}
 
 										return !fnresponse
 											? { success: false }
 											: system.nodes[id].out?.length
 												? system.nodes[id].out.reduce(
-														(acc, inp) => ({ ...acc, [inp]: fnresponse[inp] || null }),
-														{},
-													)
+													(acc, inp) => ({ ...acc, [inp]: fnresponse[inp] || null }),
+													{},
+												)
 												: fnresponse;
 									} catch (error) {
 										console.dir({ asyncretry_error: { id, error } }, { depth: null });
@@ -344,7 +352,7 @@ const system = await build({
 			{},
 			...(await Promise.all(
 				(await getFilesRecursively(unitsDir, ".yaml")).map((file) =>
-					yaml.load(fs.readFileSync(`./${file}`, `utf-8`).toString()),
+					yaml.parse(fs.readFileSync(`./${file}`, `utf-8`).toString()),
 				),
 			)),
 		),
