@@ -1045,7 +1045,180 @@ async function designerLayoutv1ViewIterate({ context, data }) {
 	};
 }
 
+async function implementFeedbackLoop({ context, data }) {
+	const { task, feedback } = data;
+	const { view } = task;
+
+	// Process feedback and refine prompts
+	const refinedAnalysisPrompt = await refineAnalysisPrompt({ context, data, feedback });
+	const refinedSvgPrompt = await refineSvgPrompt({ context, data, feedback });
+
+	// Generate refined analysis
+	const refinedAnalysis = (
+		await context.run({
+			id: "op:LLM::GEN",
+			context: {
+				...context,
+				operation: {
+					key: `designer.layoutv1.refined.analysis.${view.id}`,
+					meta: {
+						name: `Refined Designer Analysis { ${view.id} }`,
+						desc: "refined designer/layoutv1 task analysis",
+					},
+				},
+			},
+			data: {
+				model: `chatgpt-4o-latest`,
+				messages: refinedAnalysisPrompt,
+				preparser: `backticks`,
+				parser: false,
+			},
+		})
+	).generated;
+
+	// Generate refined SVG
+	const refinedSvg = (
+		await context.run({
+			id: "op:LLM::GEN",
+			context: {
+				...context,
+				operation: {
+					key: `designer.layoutv1.refined.mockup.${view.id}`,
+					meta: {
+						name: `Refined Designer Mockup { ${view.id} }`,
+						desc: "refined designer/layoutv1 mockup generation",
+					},
+					cutoff: "```svg",
+				},
+			},
+			data: {
+				model: `chatgpt-4o-latest`,
+				messages: refinedSvgPrompt,
+				preparser: false,
+				parser: false,
+			},
+		})
+	).generated;
+
+	// Process refined SVG
+	let response = await utils.parsers.extract.backticksMultiple({
+		text: refinedSvg,
+		delimiters: [`markdown`, `svg`],
+	});
+
+	if (!response.svg.length)
+		throw new Error("designer:layoutv1:refine error - generated svg is empty");
+	response.svg = response.svg.replaceAll("&", " ");
+
+	// Validate refined SVG
+	let svg = {};
+	try {
+		svg = await xml2js.parseStringPromise(response.svg, {
+			explicitArray: true,
+		});
+		if (!svg.svg.rect.filter((item) => item.$?.primitiveId).length) {
+			console.error(`layout error : generated != task ; skipping`);
+		}
+	} catch (e) {
+		console.error(e);
+	}
+
+	let render = {};
+	try {
+		render = await context.run({
+			id: "op:RENDER::LAYOUT",
+			context,
+			data: {
+				svg: { string: response.svg },
+				mode: task.type,
+			},
+		});
+	} catch (e) {
+		console.error(e);
+	}
+
+	if (render.image?.base64) delete render.image.base64;
+	if (render.image?.buffer) delete render.image.buffer;
+
+	const refinedLayout = {
+		analysis: refinedAnalysis,
+		render,
+	};
+
+	await context.run({
+		id: "op:PROJECT::STATE:UPDATE",
+		context,
+		data: {
+			operation: {
+				id: `webapp:layout:views`,
+				refs: {
+					id: view.id,
+					version: `refined`,
+				},
+			},
+			type: `end`,
+			content: {
+				key: `webapp.layout.views.${view.id}.refined`,
+				data: refinedLayout,
+			},
+		},
+	});
+
+	return {
+		webapp: {
+			layout: {
+				views: {
+					[view.id]: {
+						refined: refinedLayout,
+					},
+				},
+			},
+		},
+	};
+}
+
+async function refineAnalysisPrompt({ context, data, feedback }) {
+	// Refine the analysis prompt based on feedback
+	const { view } = data.task;
+	const refinedPrompt = [
+		{
+			role: "system",
+			content: `Based on the feedback provided, refine the analysis for the layout design of the desktop app UI view with ID "${view.id}".`,
+		},
+		{
+			role: "user",
+			content: `Feedback: ${feedback}`,
+		},
+		{
+			role: "user",
+			content: `Original Analysis: ${data.task.analysis}`,
+		},
+	];
+	return refinedPrompt;
+}
+
+async function refineSvgPrompt({ context, data, feedback }) {
+	// Refine the SVG prompt based on feedback
+	const { view } = data.task;
+	const refinedPrompt = [
+		{
+			role: "system",
+			content: `Based on the feedback provided, refine the SVG layout design for the desktop app UI view with ID "${view.id}".`,
+		},
+		{
+			role: "user",
+			content: `Feedback: ${feedback}`,
+		},
+		{
+			role: "user",
+			content: `Original SVG: ${data.task.render.svg.string}`,
+		},
+	];
+	return refinedPrompt;
+}
+
 export default {
 	"DESIGNER:LAYOUTV1::VIEW:GENERATE": designerLayoutv1ViewGenerate,
 	"DESIGNER:LAYOUTV1::VIEW:ITERATE": designerLayoutv1ViewIterate,
+	"DESIGNER:LAYOUTV1::FEEDBACK:LOOP": implementFeedbackLoop,
 };

@@ -142,10 +142,12 @@ const server = app.listen(PORT, () => {
 
 // -------------------------------------------------------- SERVER REST API PATHS ------------------------
 
+// Health check endpoint to verify server is running
 app.get("/api/ping", (req, res) => {
 	res.status(200).json({ message: "pong" });
 });
 
+// Endpoint to list all projects
 app.get("/api/projects/list", (req, res) => {
 	fs.readdir("./db/projects", (err, files) => {
 		if (err) {
@@ -172,6 +174,7 @@ app.get("/api/projects/list", (req, res) => {
 	});
 });
 
+// Endpoint to transcribe audio files
 app.post("/api/utils/transcribe", async (req, res) => {
 	const uid = Math.random().toString(36).slice(2, 11); // Generate a random unique ID
 	const tempFilePath = path.join(__dirname, "db/storage/temp", `${uid}.webm`);
@@ -203,6 +206,7 @@ app.post("/api/utils/transcribe", async (req, res) => {
 	}
 });
 
+// Endpoint to create a new project
 app.post("/api/projects/new", async (req, res) => {
 	const request = req.body;
 	/*
@@ -255,6 +259,7 @@ app.post("/api/projects/new", async (req, res) => {
 	res.status(200).json({ project: new_project_query.project });
 });
 
+// Endpoint to resume a project
 app.post("/api/project/resume", async (req, res) => {
 	const { project } = req.body;
 	const resume_response = await resume_project({ project });
@@ -290,6 +295,7 @@ const actions = {
 	*/
 };
 const actionsKeys = Object.keys(actions);
+// Endpoint to handle various project actions
 app.post("/api/project/actions", async (req, res) => {
 	/*
 		in : {
