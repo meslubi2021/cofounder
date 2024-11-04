@@ -142,7 +142,7 @@ you're a genius`,
 				},
 			},
 			data: {
-				model: `chatgpt-4o-latest`, //`gpt-4o`,
+				model: `chatgpt-4o-mini`, //`gpt-4o`,
 				messages,
 				preparser: `backticks`,
 				parser: `yaml`,
